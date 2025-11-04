@@ -1,0 +1,32 @@
+# listener-workflow.yml
+name: Listener Workflow
+
+on:
+  workflow_run:
+    workflows: ["Main Workflow"]
+    types:
+      - completed
+
+jobs:
+  check-status:
+    runs-on: Linux
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: job1-status
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+      
+      - name: Check status
+        run: |
+          if [ -f job1-status.txt ]; then
+            STATUS=$(cat job1-status.txt)
+            echo "Job1 Status: $STATUS"
+            
+            if [ "$STATUS" == "timeout" ]; then
+              echo "🕐 Job1 bị TIMEOUT"
+            elif [ "$STATUS" == "failed" ]; then
+              echo "❌ Job1 bị FAIL"
+            fi
+          fi

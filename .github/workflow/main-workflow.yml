@@ -1,0 +1,59 @@
+# main-workflow.yml
+name: Main Workflow
+
+jobs:
+  job1:
+    runs-on: Linux
+    timeout-minutes: 60
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Simulate work or failure
+        id: main-step
+        continue-on-error: true
+        run: |
+          # Giả lập fail
+          if [ "${{ github.event.inputs.simulate }}" == "fail" ]; then
+            echo "Simulating failure"
+            exit 1
+          fi
+          
+          # Giả lập timeout (chạy lâu)
+          if [ "${{ github.event.inputs.simulate }}" == "timeout" ]; then
+            echo "Simulating timeout - sleeping for 65 minutes"
+            sleep 3900
+          fi
+          
+          echo "Normal execution"
+      
+      - name: Set status output
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ steps.main-step.outcome }}" == "failure" ]; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.main-step.outcome }}" == "cancelled" ]; then
+            echo "status=timeout" >> $GITHUB_OUTPUT
+          else
+            echo "status=success" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Save status to artifact
+        if: always()
+        run: |
+          mkdir -p status
+          echo "${{ steps.set-status.outputs.status }}" > status/job1-status.txt
+      
+      - name: Upload status artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: job1-status
+          path: status/
+
+  job2:
+    runs-on: Linux
+    needs: job1
+    if: always()
+    steps:
+      - run: echo "Job 2 running"

@@ -1,6 +1,14 @@
 # main-workflow.yml
 name: Main Workflow
 
+on:
+  workflow_dispatch:
+    inputs:
+      simulate:
+        description: 'Simulate scenario (fail/timeout/success)'
+        required: false
+        default: 'success'
+
 jobs:
   job1:
     runs-on: Linux
@@ -32,28 +40,4 @@ jobs:
         run: |
           if [ "${{ steps.main-step.outcome }}" == "failure" ]; then
             echo "status=failed" >> $GITHUB_OUTPUT
-          elif [ "${{ steps.main-step.outcome }}" == "cancelled" ]; then
-            echo "status=timeout" >> $GITHUB_OUTPUT
-          else
-            echo "status=success" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Save status to artifact
-        if: always()
-        run: |
-          mkdir -p status
-          echo "${{ steps.set-status.outputs.status }}" > status/job1-status.txt
-      
-      - name: Upload status artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: job1-status
-          path: status/
-
-  job2:
-    runs-on: Linux
-    needs: job1
-    if: always()
-    steps:
-      - run: echo "Job 2 running"
+          elif [ "${{ steps.main-step.outcome }}" == "cancelled

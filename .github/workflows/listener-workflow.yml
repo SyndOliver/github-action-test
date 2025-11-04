@@ -27,15 +27,46 @@ jobs:
             
             for (const job of jobs.jobs) {
               if (job.name === 'job1') {
-                if (job.conclusion === 'timed_out') {
-                  console.log('🕐 TIMEOUT detected');
+                console.log('=== Job1 Analysis ===');
+                console.log(`Status: ${job.status}`);
+                console.log(`Conclusion: ${job.conclusion}`);
+                console.log(`Started: ${job.started_at}`);
+                console.log(`Completed: ${job.completed_at}`);
+                
+                // Tính thời gian chạy (phút)
+                const started = new Date(job.started_at);
+                const completed = new Date(job.completed_at);
+                const durationMinutes = (completed - started) / 1000 / 60;
+                console.log(`Duration: ${durationMinutes.toFixed(2)} minutes`);
+                
+                // Kiểm tra timeout: conclusion là 'cancelled' VÀ thời gian gần bằng timeout setting
+                // Giả sử timeout-minutes: 60 trong main workflow
+                const timeoutThreshold = 59; // Chút ít buffer
+                
+                if (job.conclusion === 'cancelled' && durationMinutes >= timeoutThreshold) {
+                  console.log('🕐 TIMEOUT detected (cancelled after ' + durationMinutes + ' minutes)');
                   core.setOutput('is_timeout', 'true');
                   core.setOutput('is_failure', 'false');
-                } else if (job.conclusion === 'failure') {
+                } 
+                else if (job.conclusion === 'failure') {
                   console.log('❌ FAILURE detected');
                   core.setOutput('is_failure', 'true');
                   core.setOutput('is_timeout', 'false');
-                } else {
+                  
+                  // Log chi tiết step nào bị fail
+                  for (const step of job.steps) {
+                    if (step.conclusion === 'failure') {
+                      console.log(`  → Failed at step: ${step.name}`);
+                    }
+                  }
+                }
+                else if (job.conclusion === 'cancelled' && durationMinutes < timeoutThreshold) {
+                  console.log('⚠️ CANCELLED manually (not timeout)');
+                  core.setOutput('is_timeout', 'false');
+                  core.setOutput('is_failure', 'false');
+                }
+                else {
+                  console.log('✅ SUCCESS or other status');
                   core.setOutput('is_failure', 'false');
                   core.setOutput('is_timeout', 'false');
                 }

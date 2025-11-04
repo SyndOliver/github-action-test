@@ -12,7 +12,7 @@ on:
 jobs:
   job1:
     runs-on: Linux
-    timeout-minutes: 60
+    timeout-minutes: 1
     outputs:
       status: ${{ steps.set-status.outputs.status }}
     steps:
@@ -29,7 +29,7 @@ jobs:
           # Giả lập timeout (chạy lâu)
           if [ "${{ github.event.inputs.simulate }}" == "timeout" ]; then
             echo "Simulating timeout - sleeping for 65 minutes"
-            sleep 1200  # Giả lập timeout
+            sleep 120  # Giả lập timeout
           fi
           
           echo "Normal execution"

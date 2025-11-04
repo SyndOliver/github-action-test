@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Simulate work or failure
         id: main-step
-        continue-on-error: true
+        # continue-on-error: true
         run: |
           # Giả lập fail
           if [ "${{ github.event.inputs.simulate }}" == "fail" ]; then

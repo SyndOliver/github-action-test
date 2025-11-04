@@ -32,4 +32,9 @@ jobs:
           fi
           
           echo "Normal execution"
-      
+  job2:
+    runs-on: Linux
+    steps:
+      - name: Normal work
+        run: |
+          echo "Job2 running normally"

@@ -1,4 +1,4 @@
-name: Main Workflow - Run GitHub CLI and Save Logs
+name: Login GitHub CLI and Save Logs
 
 on: 
   push:

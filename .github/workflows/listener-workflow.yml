@@ -3,7 +3,7 @@ name: Listener Workflow
 
 on:
   workflow_run:
-    workflows: ["Main Workflow"]
+    workflows: ["Main"]
     types:
       - completed
 

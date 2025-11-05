@@ -6,21 +6,46 @@ on:
   workflow_dispatch: 
 
 jobs:
-  save-logs:
-    runs-on: Linux
+  gh-login-job:
+    runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Generate log file
+      
+      - name: Login GitHub CLI
+        id: gh-login
         run: |
-          echo "=== START LOG ===" > gh_log.txt
-          echo "Hello from GitHub Actions!" >> gh_log.txt
-          gh --version >> gh_log.txt 2>&1
-          echo "=== END LOG ===" >> gh_log.txt
-
+          # Redirect cả stdout và stderr vào file
+          {
+            gh --version
+            echo $GH_TOKEN | gh auth login -h github.com -p https --with-token
+          } > gh-login-log.txt 2>&1
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        continue-on-error: true
+      
+      - name: Add additional log info
+        if: always()
+        run: |
+          echo "" >> gh-login-log.txt
+          echo "==================" >> gh-login-log.txt
+          echo "Exit Code: ${{ steps.gh-login.outcome }}" >> gh-login-log.txt
+          echo "Timestamp: $(date)" >> gh-login-log.txt
+          echo "Workflow: ${{ github.workflow }}" >> gh-login-log.txt
+          echo "Run ID: ${{ github.run_id }}" >> gh-login-log.txt
+          
+      - name: Display logs (for debugging)
+        if: always()
+        run: |
+          echo "==== Log Content ===="
+          cat gh-login-log.txt
+          
       - name: Upload logs as artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gh-cli-logs
-          path: gh_log.txt
+          name: gh-login-logs-${{ github.run_id }}
+          path: gh-login-log.txt
+          retention-days: 7
+          if-no-files-found: error

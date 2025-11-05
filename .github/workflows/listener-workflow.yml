@@ -1,21 +1,39 @@
-name: Read Logs Workflow
+name: Process Logs
 
 on:
   workflow_run:
-    workflows: ["Main Workflow - Save Logs"]
+    workflows: ["Login GitHub CLI and Save Logs"]
     types:
       - completed
 
 jobs:
-  read-logs:
-    runs-on: Linux
+  process-logs:
+    runs-on: ubuntu-latest
+    
     steps:
-      - name: Download log artifact
+      - name: Download logs artifact
         uses: actions/download-artifact@v4
         with:
-          name: gh-cli-logs
-
-      - name: Display logs
+          name: gh-login-logs-${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+      
+      - name: Read and display logs
         run: |
-          echo "=== Logs from previous workflow ==="
-          cat gh_log.txt
+          echo "==== Downloaded Log Content ===="
+          cat gh-login-log.txt
+          
+      - name: Process logs (ví dụ)
+        run: |
+          if grep -q "Error" gh-login-log.txt; then
+            echo "Found error in logs!"
+            # Làm gì đó khi có error
+          else
+            echo "No errors found"
+          fi
+          
+      - name: Parse log info
+        run: |
+          echo "Analyzing logs..."
+          grep "gh version" gh-login-log.txt || echo "Version not found"
+          grep "Exit Code" gh-login-log.txt || echo "Exit code not found"

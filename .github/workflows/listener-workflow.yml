@@ -2,15 +2,15 @@ name: Read Logs Workflow
 
 on:
   workflow_run:
-    workflows: ["Main Workflow - Run GitHub CLI and Save Logs"]
+    workflows: ["Main Workflow - Save Logs"]
     types:
       - completed
 
 jobs:
   read-logs:
-    runs-on: ubuntu-latest
+    runs-on: Linux
     steps:
-      - name: Download logs from previous workflow
+      - name: Download log artifact
         uses: actions/download-artifact@v4
         with:
           name: gh-cli-logs

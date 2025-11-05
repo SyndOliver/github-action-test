@@ -9,21 +9,19 @@ jobs:
   test:
     runs-on: Linux
     steps:
-      - name: Install and login GitHub CLI
+      - name: Install GitHub CLI locally
         run: |
-          # Install gh CLI
-          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
-          
-          # Login using token
-          echo "${{ secrets.GH_TOKEN }}" | gh auth login --with-token
-          env:
-            GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
+          curl -L https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.tar.gz -o gh.tar.gz
+          tar xzf gh.tar.gz -C $HOME
+          echo "$HOME/gh_2.12.1_linux_amd64/bin" >> $GITHUB_PATH
+      
+      - name: Login GitHub CLI
+        run: |
+          gh --version
+          echo $GH_TOKEN | gh auth login -h github.boschdevcloud.com -p https --with-token
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      
       - name: Run validator
         id: validate
         uses: redhat-plumbers-in-action/pull-request-validator@v1
@@ -40,7 +38,7 @@ jobs:
           echo "=== Captured Logs ==="
           cat captured-logs.txt
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
       
       - name: Upload logs artifact
         if: always()

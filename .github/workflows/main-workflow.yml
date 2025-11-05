@@ -18,7 +18,7 @@ jobs:
       - name: Login GitHub CLI
         run: |
           gh --version
-          echo $GH_TOKEN | gh auth login -h github.boschdevcloud.com -p https --with-token
+          echo $GH_TOKEN | gh auth login -h github.com -p https --with-token
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
       

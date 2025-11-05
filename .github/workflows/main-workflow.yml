@@ -1,39 +1,37 @@
-name: Main Workflow
+name: Test with Log Capture
 
-on:
-  workflow_dispatch:
-    inputs:
-      simulate:
-        description: 'Simulate scenario (fail/timeout/success)'
-        required: false
-        default: 'success'
+on: 
+  push:
+  pull_request:
+  workflow_dispatch: 
 
 jobs:
-  job1:
-    runs-on: Linux
-    timeout-minutes: 1
-    outputs:
-      status: ${{ steps.set-status.outputs.status }}
-    steps:
-      - name: Simulate work or failure
-        id: main-step
-        run: |
-          # Giả lập fail
-          if [ "${{ github.event.inputs.simulate }}" == "fail" ]; then
-            echo "Simulating failure"
-            exit 1
-          fi
-          
-          # Giả lập timeout (chạy lâu)
-          if [ "${{ github.event.inputs.simulate }}" == "timeout" ]; then
-            echo "Simulating timeout - sleeping for 65 minutes"
-            sleep 120  # Giả lập timeout
-          fi
-          
-          echo "Normal execution"
-  job2:
+  test:
     runs-on: Linux
     steps:
-      - name: Normal work
+      - uses: actions/checkout@v3
+      
+      - name: Run validator
+        id: validate
+        uses: redhat-plumbers-in-action/pull-request-validator@v1
+        continue-on-error: true
+      
+      - name: Capture logs
+        if: always()
         run: |
-          echo "Job2 running normally"
+          echo "Waiting for logs to be available..."
+          sleep 1
+          
+          gh run view ${{ github.run_id }} --log > captured-logs.txt
+          
+          echo "=== Captured Logs ==="
+          cat captured-logs.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      
+      - name: Upload logs artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs
+          path: captured-logs.txt

@@ -1,4 +1,4 @@
-name: Test with Log Capture
+name: Main Workflow - Run GitHub CLI and Save Logs
 
 on: 
   push:
@@ -6,43 +6,25 @@ on:
   workflow_dispatch: 
 
 jobs:
-  test:
-    runs-on: Linux
+  run-gh-cli:
+    runs-on: ubuntu-latest
     steps:
-      - name: Install GitHub CLI locally
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run GitHub CLI and save logs
         run: |
-          curl -L https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.tar.gz -o gh.tar.gz
-          tar xzf gh.tar.gz -C $HOME
-          echo "$HOME/gh_2.12.1_linux_amd64/bin" >> $GITHUB_PATH
-      
-      - name: Login GitHub CLI
-        run: |
-          gh --version
-          echo $GH_TOKEN | gh auth login -h github.com -p https --with-token
+          {
+            echo "=== START LOG ==="
+            gh --version
+            echo $GH_TOKEN | gh auth login -h github.com -p https --with-token
+            echo "=== END LOG ==="
+          } > gh_log.txt 2>&1
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      
-      - name: Run validator
-        id: validate
-        uses: redhat-plumbers-in-action/pull-request-validator@v1
-        continue-on-error: true
-      
-      - name: Capture logs
-        if: always()
-        run: |
-          echo "Waiting for logs to be available..."
-          sleep 1
-          
-          gh run view ${{ github.run_id }} --log > captured-logs.txt
-          
-          echo "=== Captured Logs ==="
-          cat captured-logs.txt
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      
-      - name: Upload logs artifact
-        if: always()
+
+      - name: Upload logs as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: logs
-          path: captured-logs.txt
+          name: gh-cli-logs
+          path: gh_log.txt

@@ -1,88 +1,21 @@
-# listener-workflow.yml
-name: Listener Workflow
+name: Read Logs Workflow
 
 on:
   workflow_run:
-    workflows: ["Main Workflow"]
+    workflows: ["Main Workflow - Run GitHub CLI and Save Logs"]
     types:
       - completed
 
 jobs:
-  detect-type:
-    runs-on: Linux
-    outputs:
-      is_failure: ${{ steps.check.outputs.is_failure }}
-      is_timeout: ${{ steps.check.outputs.is_timeout }}
+  read-logs:
+    runs-on: ubuntu-latest
     steps:
-      - name: Detect failure type
-        id: check
-        uses: actions/github-script@v7
+      - name: Download logs from previous workflow
+        uses: actions/download-artifact@v4
         with:
-          script: |
-            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.payload.workflow_run.id,
-            });
-            
-            for (const job of jobs.jobs) {
-              if (job.name === 'job1') {
-                if (job.conclusion === 'cancelled') {
-                  console.log('🕐 TIMEOUT detected');
-                  core.setOutput('is_timeout', 'true');
-                  core.setOutput('is_failure', 'false');
-                } else if (job.conclusion === 'failure') {
-                  console.log('❌ FAILURE detected');
-                  core.setOutput('is_failure', 'true');
-                  core.setOutput('is_timeout', 'false');
-                } else {
-                  core.setOutput('is_failure', 'false');
-                  core.setOutput('is_timeout', 'false');
-                }
-              }
-            }
-  
-  # Job này CHỈ chạy khi là failure (không phải timeout)
-  handle-failure:
-    runs-on: Linux
-    needs: detect-type
-    if: needs.detect-type.outputs.is_failure == 'true'
-    steps:
-      - name: Process failure
+          name: gh-cli-logs
+
+      - name: Display logs
         run: |
-          echo "Xử lý failure case..."
-          
-      - name: Download failure artifacts
-        uses: dawidd6/action-download-artifact@v3
-        with:
-          workflow: main-workflow.yml 
-          run_id: ${{ github.event.workflow_run.id }}
-          name: job1-status
-          path: ./status
-      
-      - name: Send failure notification
-        run: |
-          echo "Gửi notification về failure"
-          # Logic notification
-      
-      - name: Create issue for failure
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Main Workflow Job1 Failed',
-              body: `Job1 failed in workflow run: ${context.payload.workflow_run.html_url}`,
-              labels: ['bug', 'workflow-failure']
-            });
-  
-  # Job này CHỈ chạy khi là timeout (optional - nếu bạn muốn xử lý riêng)
-  handle-timeout:
-    runs-on: Linux
-    needs: detect-type
-    if: needs.detect-type.outputs.is_timeout == 'true'
-    steps:
-      - name: Log timeout
-        run: |
-          echo "Job1 bị timeout - không cần xử lý đặc biệt"
+          echo "=== Logs from previous workflow ==="
+          cat gh_log.txt
